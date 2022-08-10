@@ -2,6 +2,7 @@ package com.ugurrsnr.imagetotext
 
 import android.Manifest
 import android.app.Activity
+import android.app.ProgressDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,14 +10,22 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ugurrsnr.imagetotext.databinding.ActivityMainBinding
+import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding  : ActivityMainBinding
@@ -37,6 +46,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraPermissions : Array<String>
     private lateinit var storagePermissions : Array<String>
 
+    private lateinit var progressDialog : ProgressDialog
+
+    private lateinit var textRecognizer : TextRecognizer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -47,9 +60,26 @@ class MainActivity : AppCompatActivity() {
         recognizeTextButton = binding.recognizeTextBtn
         imageIV = binding.imageIV
         recognizedTextET = binding.recognizedTextET
+        //
+
+        progressDialog = ProgressDialog(this)
+        progressDialog.setTitle("Please Wait")
+        progressDialog.setCanceledOnTouchOutside(false)
+
+        textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+
 
         inputImageBtn.setOnClickListener {
             showInputImageDialog()
+        }
+
+        recognizeTextButton.setOnClickListener {
+            if (imageUri == null) {
+                showToast("Pick Image")
+            }else{
+                recognizeTextFromImage()
+            }
         }
 
         //initialize arrays of permissions
@@ -58,7 +88,58 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun recognizeTextFromImage() {
+        progressDialog.setMessage("Preparing")
+        progressDialog.show()
+
+        try {
+            val inputImage = InputImage.fromFilePath(this,imageUri!!)
+            progressDialog.setMessage("Recognizing text...")
+
+            val textTaskResult = textRecognizer.process(inputImage)
+                .addOnSuccessListener {
+                    progressDialog.dismiss()
+                    val recognizedText = it.text
+                    recognizedTextET.setText(recognizedText)
+                }
+                .addOnFailureListener { e ->
+                    progressDialog.dismiss()
+                    showToast("Failed recognize text due to ${e.message}")
+                }
+        }catch (e:Exception){
+            progressDialog.dismiss()
+            showToast("Failed to prepare image due to ${e.message}")
+        }
+    }
+
     private fun showInputImageDialog() {
+        val popUpMenu = PopupMenu(this,inputImageBtn)
+        popUpMenu.menu.add(Menu.NONE,1,1,"CAMERA")
+        popUpMenu.menu.add(Menu.NONE,2,2,"GALLERY")
+
+        popUpMenu.show()
+
+        popUpMenu.setOnMenuItemClickListener { menuItem ->
+            val id = menuItem.itemId
+            if (id ==1){
+
+                if (checkCameraPermission()){
+                    pickImageCamera()
+                }else{
+                    requestCameraPermission()
+                }
+
+            }else if(id == 2){
+
+                if (checkStoragePermission()){
+                    pickImageGallery()
+                }else{
+                    requestStoragePermission()
+                }
+            }
+
+            return@setOnMenuItemClickListener true
+        }
 
     }
 
@@ -167,3 +248,5 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this,message,Toast.LENGTH_LONG).show()
     }
 }
+
+//https://www.youtube.com/watch?v=VigFgq7h2X0&ab_channel=AtifPervaiz
