@@ -27,11 +27,6 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ugurrsnr.imagetotext.databinding.ActivityMainBinding
 import java.lang.Exception
 
-/**
- * 1. Take Image
- *      - Camera or Gallery options popup menu -> showInputImageDialog()
- *      - For both, onItemClick, firsly checkCameraPermission() and if true **pickImageCamera()** else **requestCameraPermission()**
- */
 
 
 
