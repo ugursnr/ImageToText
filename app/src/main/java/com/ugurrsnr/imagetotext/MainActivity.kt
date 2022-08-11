@@ -27,6 +27,14 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ugurrsnr.imagetotext.databinding.ActivityMainBinding
 import java.lang.Exception
 
+/**
+ * 1. Take Image
+ *      - Camera or Gallery options popup menu -> showInputImageDialog()
+ *      - For both, onItemClick, firsly checkCameraPermission() and if true **pickImageCamera()** else **requestCameraPermission()**
+ */
+
+
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding  : ActivityMainBinding
 
@@ -87,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         storagePermissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
 
     }
-
+    //if all the permissions are granted, we can pick the image and recognize the text on it.
     private fun recognizeTextFromImage() {
         progressDialog.setMessage("Preparing")
         progressDialog.show()
@@ -112,8 +120,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    //popUp menu and item click funcs
     private fun showInputImageDialog() {
-        val popUpMenu = PopupMenu(this,inputImageBtn)
+        val popUpMenu = PopupMenu(this,inputImageBtn) //take image'a basınca iki seçenek çıkar
         popUpMenu.menu.add(Menu.NONE,1,1,"CAMERA")
         popUpMenu.menu.add(Menu.NONE,2,2,"GALLERY")
 
@@ -143,6 +152,18 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    //two funcs check the permissions
+    private fun checkStoragePermission() : Boolean { //izin verildiyse true döner
+        return ContextCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun checkCameraPermission() : Boolean{ //izin verildiyse true döner
+        val cameraResult = ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        val storageResult = ContextCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        return cameraResult && storageResult
+    }
+    //
+
     private fun pickImageGallery(){
         val intent = Intent(Intent.ACTION_PICK)
         intent.type = "image/*"
@@ -164,10 +185,10 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    //launcher to camera
     private val cameraActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
             if ( result.resultCode == Activity.RESULT_OK){
-
                 //image came from camera
                 imageIV.setImageURI(imageUri)
             }else{
@@ -175,8 +196,7 @@ class MainActivity : AppCompatActivity() {
 
             }
         }
-
-
+    //launcher to gallery
     private val galleryActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
             if ( result.resultCode == Activity.RESULT_OK){
@@ -188,19 +208,10 @@ class MainActivity : AppCompatActivity() {
                 showToast("Canceled...")
 
             }
-
         }
 
 
-    private fun checkStoragePermission() : Boolean {
-        return ContextCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-    }
 
-    private fun checkCameraPermission() : Boolean{
-        val cameraResult = ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        val storageResult = ContextCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-        return cameraResult && storageResult
-    }
 
     private fun requestStoragePermission() {
         ActivityCompat.requestPermissions(this,storagePermissions, STORAGE_REQUEST_CODE)
@@ -210,6 +221,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    //when we request to take permission, according to request code pickImageCamera or pickImageGallery will work.
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
